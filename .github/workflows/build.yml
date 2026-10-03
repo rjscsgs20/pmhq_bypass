@@ -1,0 +1,50 @@
+name: Build pmhq_bypass
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Build shared library
+        run: |
+          set -euo pipefail
+          gcc \
+            -shared \
+            -fPIC \
+            -O2 \
+            -Wall \
+            -Wextra \
+            -o pmhq_bypass.so \
+            pmhq_bypass.c \
+            -ldl
+
+      - name: Verify artifact
+        run: |
+          set -euo pipefail
+          file pmhq_bypass.so
+          test "$(uname -m)" = "x86_64"
+          test "$(file -b pmhq_bypass.so | grep -c 'ELF 64-bit LSB shared object')" -eq 1
+          sha256sum pmhq_bypass.so
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: pmhq-bypass
+          if-no-files-found: error
+          path: |
+            pmhq_bypass.so
+            startup.sh
+            README.md
