@@ -1,4 +1,4 @@
-name: Build and publish latest
+name: Build and publish
 
 on:
   workflow_dispatch:
@@ -15,48 +15,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Resolve tag
+        id: tag
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const hit = (await github.paginate(github.rest.repos.listTags, context.repo))
+              .filter(t => t.commit.sha === context.sha);
+            if (hit.length !== 1) {
+              core.setFailed(`expected 1 tag on this commit, found ${hit.length}`);
+              return;
+            }
+            core.setOutput('name', hit[0].name);
+
       - name: Download build artifact
         uses: actions/download-artifact@v8
         with:
           name: pmhq-bypass
           path: dist
 
-      - name: Point latest tag to this commit
-        uses: actions/github-script@v9
-        env:
-          TARGET_SHA: ${{ github.sha }}
-        with:
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const ref = 'tags/latest';
-            const sha = process.env.TARGET_SHA;
-
-            try {
-              await github.rest.git.getRef({ owner, repo, ref });
-              await github.rest.git.updateRef({
-                owner,
-                repo,
-                ref,
-                sha,
-                force: true,
-              });
-            } catch (error) {
-              if (error.status !== 404) throw error;
-              await github.rest.git.createRef({
-                owner,
-                repo,
-                ref: `refs/${ref}`,
-                sha,
-              });
-            }
-
-      - name: Publish latest release
+      - name: Publish release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: latest
-          target_commitish: ${{ github.sha }}
-          name: latest
+          tag_name: ${{ steps.tag.outputs.name }}
+          name: ${{ steps.tag.outputs.name }}
           make_latest: true
           overwrite_files: true
           files: dist/pmhq_bypass.so
