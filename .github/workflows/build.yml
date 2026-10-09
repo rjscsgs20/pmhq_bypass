@@ -1,4 +1,4 @@
-name: Build pmhq_bypass
+name: Build
 
 on:
   workflow_dispatch:
@@ -28,8 +28,7 @@ jobs:
             -Wall \
             -Wextra \
             -o pmhq_bypass.so \
-            pmhq_bypass.c \
-            -ldl
+            pmhq_bypass.c
 
       - name: Verify artifact
         run: |
@@ -46,5 +45,4 @@ jobs:
           if-no-files-found: error
           path: |
             pmhq_bypass.so
-            startup.sh
             README.md
