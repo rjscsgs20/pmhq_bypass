@@ -28,8 +28,7 @@ jobs:
             -Wall \
             -Wextra \
             -o pmhq_bypass.so \
-            pmhq_bypass.c \
-            -ldl
+            pmhq_bypass.c
 
       - name: Verify artifact
         run: |
